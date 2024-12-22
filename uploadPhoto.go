@@ -15,6 +15,7 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	file, header, er := r.FormFile("file")
 	if er != nil {
 		log.Fatal(er)

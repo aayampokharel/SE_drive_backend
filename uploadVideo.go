@@ -16,7 +16,7 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 		fmt.Print("error while parting")
 		log.Fatal(err)
 	}
-	for {
+	for { //part is a stream of data .
 		part, er := reader.NextPart()
 		if er == io.EOF {
 			fmt.Print("==end of file==")
