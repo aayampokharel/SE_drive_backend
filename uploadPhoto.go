@@ -10,13 +10,13 @@ import (
 )
 
 func uploadPhoto(w http.ResponseWriter, r *http.Request) {
-
+	CORSFix(w, r)
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	file, header, er := r.FormFile("file")
+	file, header, er := r.FormFile("Photo")
 	if er != nil {
 		log.Fatal(er)
 	}

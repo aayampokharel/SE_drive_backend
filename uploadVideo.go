@@ -9,6 +9,7 @@ import (
 )
 
 func uploadVideo(w http.ResponseWriter, r *http.Request) {
+	CORSFix(w, r)
 	fmt.Print("video upload occuring===")
 	reader, err := r.MultipartReader()
 

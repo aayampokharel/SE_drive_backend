@@ -8,11 +8,13 @@ import (
 
 func main() {
 	router := chi.NewRouter()
-	router.Post("/uploadphoto", func(w http.ResponseWriter, r *http.Request) {
+	router.Post("/uploadphotos", func(w http.ResponseWriter, r *http.Request) {
 		//Cors
-		CORSFix(w, r)
+
 		uploadPhoto(w, r)
 	})
-
-	http.ListenAndServe(":8000", router)
+	router.Post("/uploadvideos", func(w http.ResponseWriter, r *http.Request) {
+		uploadVideo(w, r)
+	})
+	http.ListenAndServe(":8080", router)
 }
