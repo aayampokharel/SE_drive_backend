@@ -9,7 +9,8 @@ import (
 	//"path/filepath"
 )
 
-func uploadAudio(_ http.ResponseWriter, r *http.Request) {
+func uploadAudio(w http.ResponseWriter, r *http.Request) {
+	CORSFix(w, r)
 	const directory = "./uploadedAudio/"
 	var fileName string //@ later stores the filename after arrival.
 	err := r.ParseMultipartForm(10 << 20)
@@ -20,16 +21,16 @@ func uploadAudio(_ http.ResponseWriter, r *http.Request) {
 	if er != nil {
 		log.Fatal(er)
 	}
-	defer file.Close()
+	defer file.Close() //@ ??
 	fileName = header.Filename
 
-	createdFile, er := os.Create(directory + fileName)
+	createdFile, er := os.Create(directory + "audio_" + fileName)
 	if er != nil {
 		log.Fatal(er)
 	}
 	defer createdFile.Close()
 	io.Copy(createdFile, file)
-	cmd := exec.Command("ffmpeg", "-i", createdFile.Name(), directory+"output.mp3")
+	cmd := exec.Command("ffmpeg", "-i", createdFile.Name(), directory+"audio"+fileName+".mp3")
 	er = cmd.Run()
 	if er != nil {
 		log.Fatal(er)

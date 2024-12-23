@@ -6,36 +6,65 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"strings"
 )
 
 func uploadVideo(w http.ResponseWriter, r *http.Request) {
+	var fileName string
+	var videoDirectory string = "./uploadedVideos/"
 	CORSFix(w, r)
-	fmt.Print("video upload occuring===")
+
 	reader, err := r.MultipartReader()
 
 	if err != nil {
 		fmt.Print("error while parting")
+
 		log.Fatal(err)
 	}
 	for { //part is a stream of data .
 		part, er := reader.NextPart()
 		if er == io.EOF {
 			fmt.Print("==end of file==")
-			log.Fatal(er)
+			break
+
 		}
-		if part.FormName() == "video" {
-			//create a small buffer , then supply this to others .
-			file, er := os.Create("./uploadedVideos/output.mp4")
-			if er != nil {
+
+		if part.FormName() == "Video" {
+			fileName = "video_" + part.FileName()
+
+			newVideoFile, err := os.Create(videoDirectory + fileName)
+
+			if err != nil {
+				fmt.Print("1st error ")
 				log.Fatal(er)
 			}
-			defer file.Close()
-			_, err = io.Copy(file, part) // Stream file data to disk
+			//create a small buffer , then supply this to others .
+
+			_, err = io.Copy(newVideoFile, part) // Stream file data to disk
 			if err != nil {
+				fmt.Print("2nd error ")
 				log.Println("Error saving file:", err)
 			}
 
 		}
+	}
+
+	//@ eg : vid1.mp4 then ["vid1","mp4"];
+
+	nameWithoutExtension := strings.Split(fileName, ".")[0] //@ext=vid1;
+	outputFileName := nameWithoutExtension + ".mp4"
+
+	cmd := exec.Command("ffmpeg", "-i", videoDirectory+fileName, "-vf", "scale=1280:-1", "-c:v", "libx264", "-preset", "slow", "-crf", "23",
+		"-c:a", "aac", "-b:a", "128k", videoDirectory+"output_"+outputFileName)
+	fmt.Print("\n💦💦\n")
+	fmt.Print(cmd)
+	fmt.Print("\n💦💦\n")
+	// cmd := exec.Command("ffmpeg", "-i", "./uploadedVideos/gold.mp4", "-vf", "scale=1280:-1", "-c:v", "libx264", "-preset", "slow", "-crf", "23", "-c:a", "aac", "-b:a", "128k", "./uploadedVideos/output2.mp4")
+	e := cmd.Run()
+	if e != nil {
+		fmt.Print("3rd error ")
+		log.Fatal(e)
 	}
 
 }
