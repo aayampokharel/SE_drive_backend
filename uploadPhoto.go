@@ -22,27 +22,27 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	fmt.Print("the size of file is: ", header.Size, "\n")
-	fmt.Print("the header of file is: ", header.Header, "\n")
-	fmt.Print("the name of file is: ", header.Filename, "\n")
-	directoryToStoreImages, er := os.Create("./uploads/" + "input.png")
+	fileName := "photo_" + header.Filename
+	inputPhotoFileStr := "./uploadedPhotos/" + fileName
+	newPhotoFile, er := os.Create(inputPhotoFileStr)
 	if er != nil {
 		log.Fatal(er)
 	}
-	_, er = io.Copy(directoryToStoreImages, file)
+	defer newPhotoFile.Close()
+	_, er = io.Copy(newPhotoFile, file)
 	if er != nil {
 		log.Fatal(er)
 	}
+	outputPhotoFileStr := "./uploadedPhotos/" + "output_" + fileName
 	//ffmpeg -i input.png output.jpg
 	//@ extensions checking left ....! undone !
-
-	cmd := exec.Command("ffmpeg", "-i", "./uploads/input.png", "./uploads/output.jpg")
+	cmdStr := fmt.Sprintf("ffmpeg -i %s -qscale:v 31 %s", newPhotoFile.Name(), outputPhotoFileStr)
+	cmd := exec.Command("cmd", "/C", cmdStr)
 
 	er = cmd.Run()
 	if er != nil {
 		log.Fatal(er)
 	}
 	defer fmt.Print("done")
-	defer directoryToStoreImages.Close()
 
 }

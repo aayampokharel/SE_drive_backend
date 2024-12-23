@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -22,15 +23,17 @@ func uploadAudio(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(er)
 	}
 	defer file.Close() //@ ??
-	fileName = header.Filename
+	fileName = "audio_" + header.Filename
 
-	createdFile, er := os.Create(directory + "audio_" + fileName)
+	createdFile, er := os.Create(directory + fileName)
 	if er != nil {
 		log.Fatal(er)
 	}
 	defer createdFile.Close()
 	io.Copy(createdFile, file)
-	cmd := exec.Command("ffmpeg", "-i", createdFile.Name(), directory+"audio"+fileName+".mp3")
+	outputAudioFile := directory + "output_" + fileName
+	cmdStr := fmt.Sprintf("ffmpeg -i %s -b:a 48k -ar 22050 -ac 1 %s", createdFile.Name(), outputAudioFile)
+	cmd := exec.Command("cmd", "/C", cmdStr)
 	er = cmd.Run()
 	if er != nil {
 		log.Fatal(er)

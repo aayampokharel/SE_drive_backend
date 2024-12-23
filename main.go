@@ -19,5 +19,11 @@ func main() {
 	router.Post("/uploadaudios", func(w http.ResponseWriter, r *http.Request) {
 		uploadAudio(w, r)
 	})
+	router.Post("/uploadtexts", func(w http.ResponseWriter, r *http.Request) {
+		uploadText(w, r)
+	})
+	router.Post("/uploadpdfs", func(w http.ResponseWriter, r *http.Request) {
+		uploadPdf(w, r)
+	})
 	http.ListenAndServe(":8080", router)
 }
