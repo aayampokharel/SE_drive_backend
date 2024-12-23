@@ -34,6 +34,7 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(er)
 	}
 	//ffmpeg -i input.png output.jpg
+	//@ extensions checking left ....! undone !
 
 	cmd := exec.Command("ffmpeg", "-i", "./uploads/input.png", "./uploads/output.jpg")
 
