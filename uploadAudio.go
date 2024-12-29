@@ -23,7 +23,7 @@ func uploadAudio(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(er)
 	}
 	defer file.Close() //@ ??
-	fileName = "audio_" + header.Filename
+	fileName = "audio_" + replaceSpaceInFileName(header.Filename)
 
 	createdFile, er := os.Create(directory + fileName)
 	if er != nil {

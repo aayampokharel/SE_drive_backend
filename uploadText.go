@@ -23,7 +23,7 @@ func uploadText(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
-	newTextFile, er := os.Create("./uploadedTexts/" + header.Filename)
+	newTextFile, er := os.Create("./uploadedTexts/" + replaceSpaceInFileName(header.Filename))
 	if er != nil {
 		log.Fatal(er)
 	}

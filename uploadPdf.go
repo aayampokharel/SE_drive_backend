@@ -22,7 +22,7 @@ func uploadPdf(w http.ResponseWriter, r *http.Request) {
 		fmt.Print("error while parsing form field ")
 		log.Fatal(er)
 	}
-	fileName := header.Filename
+	fileName := replaceSpaceInFileName(header.Filename)
 	newPdfFile, er := os.Create("./uploadedPdfs/" + fileName)
 	if er != nil {
 		fmt.Print("error while creating file")

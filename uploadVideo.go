@@ -31,7 +31,7 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if part.FormName() == "Video" {
-			fileName = "video_" + part.FileName()
+			fileName = "video_" + replaceSpaceInFileName(part.FileName())
 
 			newVideoFile, err := os.Create(videoDirectory + fileName)
 
