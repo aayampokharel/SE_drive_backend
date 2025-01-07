@@ -55,16 +55,16 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	nameWithoutExtension := strings.Split(fileName, ".")[0] //@ext=vid1;
 	outputFileName := nameWithoutExtension + ".mp4"
 
+	videoOutputFile := videoDirectory + "output_" + outputFileName
 	cmd := exec.Command("ffmpeg", "-i", videoDirectory+fileName, "-vf", "scale=1280:-1", "-c:v", "libx264", "-preset", "slow", "-crf", "23",
-		"-c:a", "aac", "-b:a", "128k", videoDirectory+"output_"+outputFileName)
-	fmt.Print("\n💦💦\n")
-	fmt.Print(cmd)
-	fmt.Print("\n💦💦\n")
+		"-c:a", "aac", "-b:a", "128k", videoOutputFile)
+
 	// cmd := exec.Command("ffmpeg", "-i", "./uploadedVideos/gold.mp4", "-vf", "scale=1280:-1", "-c:v", "libx264", "-preset", "slow", "-crf", "23", "-c:a", "aac", "-b:a", "128k", "./uploadedVideos/output2.mp4")
 	e := cmd.Run()
 	if e != nil {
 		fmt.Print("3rd error ")
 		log.Fatal(e)
 	}
+	defer uploadFromResponse(w, videoOutputFile, "video", 1024*500)
 
 }

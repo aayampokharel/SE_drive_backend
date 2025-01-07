@@ -7,7 +7,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
+
+//@ its good to always defer the uploadFromResponse.
 
 func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 	CORSFix(w, r)
@@ -37,19 +41,19 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		fmt.Print("4")
 		log.Fatal(er)
 	}
-	outputPhotoFileStr := "./uploadedPhotos/" + "output_" + fileName
+	baseName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	outputPhotoFileStr := "./uploadedPhotos/" + "output_" + baseName + ".jpeg"
 	//ffmpeg -i input.png output.jpg
 	//@ extensions checking left ....! undone !
-	cmdStr := fmt.Sprintf("ffmpeg -i %s -qscale:v 31 %s", newPhotoFile.Name(), outputPhotoFileStr)
+	cmdStr := fmt.Sprintf("ffmpeg -i %s -qscale:v 31 -f image2 -vcodec mjpeg %s", newPhotoFile.Name(), outputPhotoFileStr)
 	cmd := exec.Command("cmd", "/C", cmdStr)
 
 	er = cmd.Run()
 	if er != nil {
-		fmt.Print("\n💦💦💦💦💦\n")
-		fmt.Print(cmd)
-		fmt.Print("\n💦💦💦💦💦\n")
+
 		log.Fatal(er)
 	}
+	defer uploadFromResponse(w, outputPhotoFileStr, "image", 1024*250)
 	defer fmt.Print("done")
 
 }

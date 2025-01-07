@@ -25,5 +25,6 @@ func main() {
 	router.Post("/uploadpdfs", func(w http.ResponseWriter, r *http.Request) {
 		uploadPdf(w, r)
 	})
-	http.ListenAndServe(":8080", router)
+	http.ListenAndServe(":8080", router) //for other purposes
+	//http.ListenAndServe(":41114", router) //for my testing in android studio
 }
