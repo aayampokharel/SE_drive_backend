@@ -14,7 +14,7 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	var fileName string
 	var videoDirectory string = "./uploadedVideos/"
 	CORSFix(w, r)
-
+	// w.Header().Set("filesize", "200")
 	reader, err := r.MultipartReader()
 
 	if err != nil {
@@ -65,6 +65,7 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 		fmt.Print("3rd error ")
 		log.Fatal(e)
 	}
+
 	defer uploadFromResponse(w, videoOutputFile, "video", 1024*500)
 
 }
