@@ -1,40 +1,45 @@
 package main
 
 import (
+	//"bufio"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
+	"time"
 )
 
 func uploadFromResponse(w http.ResponseWriter, filePath string, contentType string, chunkSize int) {
+	// Create a pipe to stream data
+	pr, pw := io.Pipe()
+	ch := make(chan bool)
 
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
-		return
-	}
+	// Wrap the pipe's writer with a buffered writer to enable flushing
+	//bufWriter := bufio.NewWriter(pw)
 
-	// Set headers
+	writer := multipart.NewWriter(w)
+
+	// Set response headers
 	w.Header().Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
 	w.Header().Set("Transfer-Encoding", "chunked")
 
-	// Get file info for file size
+	// Ensure resources are closed properly
+
+	defer pw.Close()
+	defer writer.Close()
+
+	// Get file info
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		http.Error(w, "Error getting file info", http.StatusInternalServerError)
 		return
 	}
+
 	fileSize := fileInfo.Size()
 	w.Header().Set("File-Size", fmt.Sprintf("%d", fileSize))
 
-	// Create a multipart form part
-	// part, err := writer.CreateFormFile(contentType, fileInfo.Name())
-	if err != nil {
-		http.Error(w, "Error creating form file", http.StatusInternalServerError)
-		return
-	}
-
+	// Open the file for reading
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "Error opening file", http.StatusInternalServerError)
@@ -42,34 +47,55 @@ func uploadFromResponse(w http.ResponseWriter, filePath string, contentType stri
 	}
 	defer file.Close()
 
-	buffer := make([]byte, chunkSize)
-	for {
-		n, err := file.Read(buffer)
-		if n == 0 {
-			break
-		}
-		if err != nil && err != io.EOF {
-			http.Error(w, "Error reading file", http.StatusInternalServerError)
+	// Launch a goroutine to write the file to the pipe
+	go func() {
+		// Create the form file part
+		part, err := writer.CreateFormFile(contentType, fileInfo.Name())
+		if err != nil {
+			pw.CloseWithError(err)
 			return
 		}
 
-		// Write the chunk to the multipart part
-		_, writeErr := w.Write(buffer[:n])
-		if writeErr != nil {
-			http.Error(w, "Error writing file data", http.StatusInternalServerError)
-			return
+		// Read and write chunks
+		buffer := make([]byte, chunkSize)
+		for {
+			n, err := file.Read(buffer)
+			if err != nil && err != io.EOF {
+				pw.CloseWithError(err)
+				return
+			}
+			if n == 0 {
+				break
+			}
+
+			// Write to the multipart part
+			go func() {
+				//@to ensure writing completes before flushing .
+
+				if _, err := part.Write(buffer[:n]); err != nil {
+					pw.CloseWithError(err)
+					return
+
+				}
+				ch <- true
+			}()
+			<-ch //just for ensuring part.write completes
+
+			// Flush the buffer to ensure immediate sending of data
+			// if err := w.Flush(); err != nil {
+			// 	pw.CloseWithError(err)
+			// 	return
+			// }
+			time.Sleep(4 * time.Second)
 		}
 
-		// Flush the response to send the chunk immediately
-		flusher.Flush()
+		// Close the writer when done
+		writer.Close()
+		pw.Close()
+	}()
 
-		// For debugging
-		fmt.Printf("Chunk of size %d sent\n", n)
-	}
-
-	// Close the multipart writer
-	if err := writer.Close(); err != nil {
-		http.Error(w, "Error closing multipart writer", http.StatusInternalServerError)
-		return
+	// Copy data from the pipe to the HTTP response
+	if _, err := io.Copy(w, pr); err != nil {
+		fmt.Printf("Error copying data to response: %v\n", err)
 	}
 }
