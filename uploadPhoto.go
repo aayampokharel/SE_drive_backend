@@ -7,41 +7,53 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
-func uploadPhoto(w http.ResponseWriter, r *http.Request) {
+//@ its good to always defer the uploadFromResponse.
 
-	err := r.ParseMultipartForm(10 << 20)
+func uploadPhoto(w http.ResponseWriter, r *http.Request) {
+	CORSFix(w, r)
+	err := r.ParseMultipartForm(20 << 20)
 	if err != nil {
+
 		log.Fatal(err)
 	}
 
-	file, header, er := r.FormFile("file")
+	file, header, er := r.FormFile("Photo")
 	if er != nil {
+
 		log.Fatal(er)
 	}
 	defer file.Close()
 
-	fmt.Print("the size of file is: ", header.Size, "\n")
-	fmt.Print("the header of file is: ", header.Header, "\n")
-	fmt.Print("the name of file is: ", header.Filename, "\n")
-	directoryToStoreImages, er := os.Create("./uploads/" + "input.png")
+	fileName := "photo_" + replaceSpaceInFileName(header.Filename)
+	inputPhotoFileStr := "./uploadedPhotos/" + fileName
+	newPhotoFile, er := os.Create(inputPhotoFileStr)
 	if er != nil {
-		log.Fatal(er)
-	}
-	_, er = io.Copy(directoryToStoreImages, file)
-	if er != nil {
-		log.Fatal(er)
-	}
-	//ffmpeg -i input.png output.jpg
 
-	cmd := exec.Command("ffmpeg", "-i", "./uploads/input.png", "./uploads/output.jpg")
+		log.Fatal(er)
+	}
+	defer newPhotoFile.Close()
+	_, er = io.Copy(newPhotoFile, file)
+	if er != nil {
+		fmt.Print("4")
+		log.Fatal(er)
+	}
+	baseName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	outputPhotoFileStr := "./uploadedPhotos/" + "output_" + baseName + ".jpeg"
+	//ffmpeg -i input.png output.jpg
+	//@ extensions checking left ....! undone !
+	cmdStr := fmt.Sprintf("ffmpeg -i %s -qscale:v 31 -f image2 -vcodec mjpeg %s", newPhotoFile.Name(), outputPhotoFileStr)
+	cmd := exec.Command("cmd", "/C", cmdStr)
 
 	er = cmd.Run()
 	if er != nil {
+
 		log.Fatal(er)
 	}
+	defer uploadFromResponse(w, outputPhotoFileStr, "image", 1024*250)
 	defer fmt.Print("done")
-	defer directoryToStoreImages.Close()
 
 }
