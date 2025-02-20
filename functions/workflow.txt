@@ -1,0 +1,10 @@
+Here, first i am loggining in or signing in , 
+check if the login then check if registered or not for subscription . 
+subscription is a column in table with bool value , if yes no restriction , 
+if no , restrict to 10-already uploaded . 
+restrict user to that . 
+after 10 , display no further uploads . 
+
+
+==============db structure =====================
+name,email,password,videos,photos,audio,text,pdfs,subscribed,trial free uploads limit, 
