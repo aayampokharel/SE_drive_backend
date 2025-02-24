@@ -1,28 +1,28 @@
 package main
 
 import (
+	"SE_drive_backend/handlers"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	//"path/filepath"
 )
 
 func uploadAudio(w http.ResponseWriter, r *http.Request) {
-	CORSFix(w, r)
+	handlers.CORSFix(w, r)
 	const directory = "./uploadedAudio/"
 	var fileName string //@ later stores the filename after arrival.
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		log.Fatal(err)
 	}
-	file, header, er := r.FormFile("Audio")
+	file, header, er := r.FormFile("Audio") //audio file .
 	if er != nil {
 		log.Fatal(er)
 	}
-	defer file.Close() //@ ??
+	defer file.Close()
 	fileName = "audio_" + replaceSpaceInFileName(header.Filename)
 
 	createdFile, er := os.Create(directory + fileName)

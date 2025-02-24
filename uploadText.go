@@ -1,6 +1,7 @@
 package main
 
 import (
+	"SE_drive_backend/handlers"
 	"fmt"
 	"io"
 	"log"
@@ -9,7 +10,7 @@ import (
 )
 
 func uploadText(w http.ResponseWriter, r *http.Request) {
-	CORSFix(w, r)
+	handlers.CORSFix(w, r)
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		fmt.Print("error while parsing in uploadText")

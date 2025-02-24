@@ -16,7 +16,7 @@ func GetDSN() string {
 		log.Fatal("Error loading .env file")
 	}
 
-	// Read values from environment variables
+	// Read values from environment variables in .env files .
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbHost := os.Getenv("DB_HOST")

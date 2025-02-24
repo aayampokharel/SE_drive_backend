@@ -81,11 +81,6 @@ func uploadFromResponse(w http.ResponseWriter, filePath string, contentType stri
 			}()
 			<-ch //just for ensuring part.write completes
 
-			// Flush the buffer to ensure immediate sending of data
-			// if err := w.Flush(); err != nil {
-			// 	pw.CloseWithError(err)
-			// 	return
-			// }
 			time.Sleep(4 * time.Second)
 		}
 

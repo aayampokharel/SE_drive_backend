@@ -1,6 +1,11 @@
 package main
 
 import (
+	"SE_drive_backend/functions"
+	"SE_drive_backend/handlers"
+	"encoding/json"
+
+	"SE_drive_backend/models"
 	"fmt"
 	"io"
 	"log"
@@ -14,12 +19,21 @@ import (
 //@ its good to always defer the uploadFromResponse.
 
 func uploadPhoto(w http.ResponseWriter, r *http.Request) {
-	CORSFix(w, r)
+	handlers.CORSFix(w, r)
+
 	err := r.ParseMultipartForm(20 << 20)
 	if err != nil {
 
-		log.Fatal(err)
+		log.Fatal("Size not enough . ")
 	}
+	token := r.FormValue("token_id")
+	if token == "" {
+
+		json.NewEncoder(w).Encode(models.ErrorsModel{StatusCode: http.StatusBadRequest, Err: "Empty Token found ."}) //direct .
+		return
+
+	}
+	photoRequestModel := models.PhotoRequestModel{Token: token}
 
 	file, header, er := r.FormFile("Photo")
 	if er != nil {
@@ -53,7 +67,37 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 
 		log.Fatal(er)
 	}
-	defer uploadFromResponse(w, outputPhotoFileStr, "image", 1024*250)
+	//! what does this do? to know .
+	//defer uploadFromResponse(w, outputPhotoFileStr, "image", 1024*250)
 	defer fmt.Print("done")
+
+	//--database execution --//
+	db, err := functions.DbConnect(w)
+
+	if err != nil {
+		print("error 1")
+		json.NewEncoder(w).Encode(models.ErrorsModel{StatusCode: http.StatusBadRequest, Err: "error while connecting to db while uploading photo."})
+
+		// create table if not exists VideoTable(
+		// 	count int AUTO_INCREMENT primary key,
+		// 	token varchar(50) not null,
+		// 	videoFileName varchar(150) not null
+
+		// 	);
+
+	}
+	query := `INSERT INTO PhotoTable(token,PhotoFileName) VALUES(?,?)`
+
+	_, err = db.Exec(query, photoRequestModel.Token, outputPhotoFileStr)
+	if err != nil {
+		print("error 2")
+		json.NewEncoder(w).Encode(models.ErrorsModel{StatusCode: http.StatusBadGateway, Err: "Error while executing insertion in db for photo."})
+		//! i can also throw error by making PHOTOFILENAME UNIQUE AS WHY 2 OF SAME NAME  AND THAT IS NOT POSSIBLE AS WELL . SO TEI HO .FRON FRONTEND TELL AAKASH TO CHECK IF THE FILENAME IS SAME AS OTHER THEN ONLY SEND ELSE ERROR WILL BE THROWN .
+
+		//! ALSO DEDUCE -1 from trial photos .
+		return
+	}
+
+	json.NewEncoder(w).Encode(models.LogInResponseModel{MessageStatus: "Photo  uploaded  successfully!"})
 
 }
