@@ -29,7 +29,7 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token_id")
 	if token == "" {
 
-		json.NewEncoder(w).Encode(models.ErrorsModel{StatusCode: http.StatusBadRequest, Err: "Empty Token found ."}) //direct .
+		json.NewEncoder(w).Encode(functions.SetErrorModel(http.StatusBadRequest, "Empty Token found .")) //direct .
 		return
 
 	}
@@ -75,8 +75,8 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 	db, err := functions.DbConnect(w)
 
 	if err != nil {
-		print("error 1")
-		json.NewEncoder(w).Encode(models.ErrorsModel{StatusCode: http.StatusBadRequest, Err: "error while connecting to db while uploading photo."})
+
+		json.NewEncoder(w).Encode(functions.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error while connecting to db while uploading photo.%s", err)))
 
 		// create table if not exists VideoTable(
 		// 	count int AUTO_INCREMENT primary key,
@@ -91,7 +91,7 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 	_, err = db.Exec(query, photoRequestModel.Token, outputPhotoFileStr)
 	if err != nil {
 		print("error 2")
-		json.NewEncoder(w).Encode(models.ErrorsModel{StatusCode: http.StatusBadGateway, Err: "Error while executing insertion in db for photo."})
+		json.NewEncoder(w).Encode(functions.SetErrorModel(http.StatusBadGateway, fmt.Sprintf("Error while executing insertion in db for photo.%s", err)))
 		//! i can also throw error by making PHOTOFILENAME UNIQUE AS WHY 2 OF SAME NAME  AND THAT IS NOT POSSIBLE AS WELL . SO TEI HO .FRON FRONTEND TELL AAKASH TO CHECK IF THE FILENAME IS SAME AS OTHER THEN ONLY SEND ELSE ERROR WILL BE THROWN .
 
 		//! ALSO DEDUCE -1 from trial photos .
