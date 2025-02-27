@@ -135,6 +135,6 @@ WHERE u.email = (?);
 	mediaMapStructureInitialize.Token = token
 	//below assignment is right , as if user exists , then we return above step only , used DoesUserExistInMap() for checking .
 	global.MediaMap[token] = mediaMapStructureInitialize
-	json.NewEncoder(w).Encode(mediaMapStructureInitialize)
+	json.NewEncoder(w).Encode(global.MediaMap[token])
 
 }

@@ -8,7 +8,9 @@ type LogInRequestModel struct {
 }
 
 type LogInResponseModel struct {
-	MessageStatus string
+	MessageStatus         string
+	OriginalPhotoFileName string // this is also required as compare garna pani as file upload shouldnot be same and compare with tis .
+	OutputPhotoFileName   string
 }
 
 type LogInDbModel struct {

@@ -86,9 +86,9 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		// 	);
 
 	}
-	query := `INSERT INTO PhotoTable(token,PhotoFileName) VALUES(?,?)`
+	query := `INSERT INTO PhotoTable(token,originalPhotoFileName,outputPhotoFileName) VALUES(?,?,?)`
 
-	_, err = db.Exec(query, photoRequestModel.Token, outputPhotoFileStr)
+	_, err = db.Exec(query, photoRequestModel.Token, newPhotoFile.Name(), outputPhotoFileStr)
 	if err != nil {
 		print("error 2")
 		json.NewEncoder(w).Encode(functions.SetErrorModel(http.StatusBadGateway, fmt.Sprintf("Error while executing insertion in db for photo.%s", err)))
@@ -98,6 +98,6 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(models.LogInResponseModel{MessageStatus: "Photo  uploaded  successfully!"})
+	json.NewEncoder(w).Encode(models.LogInResponseModel{MessageStatus: "Photo  uploaded  successfully!", OriginalPhotoFileName: newPhotoFile.Name(), OutputPhotoFileName: outputPhotoFileStr})
 
 }

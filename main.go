@@ -33,6 +33,9 @@ func main() {
 	router.Post("/uploadpdfs", func(w http.ResponseWriter, r *http.Request) {
 		uploadPdf(w, r)
 	})
+	router.Post("/getsavedphotos", func(w http.ResponseWriter, r *http.Request) {
+		handlers.GetSavedPhotos(w, r)
+	})
 	http.ListenAndServe(":8000", router)
 	//http.ListenAndServe(":41114", router) //for my testing in android studio
 }

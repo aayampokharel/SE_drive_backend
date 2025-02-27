@@ -38,31 +38,31 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	//============_________===========
 	//token
 	token := functions.GenerateUUID()
-	userCheckQuery := `SELECT email FROM UserInfoTable WHERE email=(?)`
-	userInsertQuery := `Insert into UserInfoTable(email,userName,userPassword,isSubscribed,token) Values (?,?,?,false,?)`
+	var dbNameCheck string
+	userCheckQuery := `SELECT email FROM UserInfoTable WHERE email=(?);`
+	userInsertQuery := `Insert into UserInfoTable(email,userName,userPassword,isSubscribed,token) values (?,?,?,false,?);`
 
-	er := db.QueryRow(userCheckQuery).Scan(&signUpRequestDetails.Email)
+	er := db.QueryRow(userCheckQuery, signUpRequestDetails.Email).Scan(&dbNameCheck)
 	if er != nil {
 		if er == sql.ErrNoRows {
+			//no rows meaning user doesnot exist .
+			_, err = db.Exec(userInsertQuery, signUpRequestDetails.Email, signUpRequestDetails.Name, signUpRequestDetails.Password, token)
+			if err != nil {
+				signInFailure = functions.SetErrorModel(http.StatusBadRequest, "error while insertion in db during SignIn.")
 
-			signInFailure = functions.SetErrorModel(http.StatusBadRequest, "Username already exists.")
+			}
+			//-successful reponse .
+			signUpResponseDetails := models.SignUpResponseModel{Message: "SignIn Successful.", TokenId: token}
+			json.NewEncoder(w).Encode(signUpResponseDetails)
 
 		} else {
-
 			signInFailure = functions.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error occured during signin. %s", er))
 		}
-		json.NewEncoder(w).Encode(signInFailure)
-		return
-	}
 
-	_, err = db.Exec(userInsertQuery, signUpRequestDetails.Email, signUpRequestDetails.Name, signUpRequestDetails.Password, token)
-	if err != nil {
-		signInFailure = functions.SetErrorModel(http.StatusBadRequest, "error while insertion in db during SignIn.")
 		json.NewEncoder(w).Encode(signInFailure)
 		return
 	}
-	//-successful reponse .
-	signUpResponseDetails := models.SignUpResponseModel{Message: "SignIn Successful.", TokenId: token}
-	json.NewEncoder(w).Encode(signUpResponseDetails)
+	signInFailure = functions.SetErrorModel(http.StatusBadRequest, "Username already exists.")
+	json.NewEncoder(w).Encode(signInFailure)
 
 }
