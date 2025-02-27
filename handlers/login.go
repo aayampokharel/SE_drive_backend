@@ -25,6 +25,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//! password not checked ,only email verified in db .
+
+	//check if user is already in globalMap to prevent unnecessary call of db .
+
+	mapModelValue, ok := functions.DoesUserExistInMap(logInDetails.Email)
+	if ok {
+		fmt.Print("\n\n\n\n from inside map =====\n\n\n\n")
+		json.NewEncoder(w).Encode(mapModelValue)
+		return
+
+	}
+
 	db, dbErr := functions.DbConnect(w)
 	if dbErr != nil {
 		logInFailure = functions.SetErrorModel(http.StatusBadRequest, "error while connecting to DB during Login.")
@@ -85,8 +96,13 @@ WHERE u.email = (?);
 		TextsList:  []string{},
 		PdfsList:   []string{},
 	}
+	if !resultRow.Next() {
+		logInFailure = functions.SetErrorModel(http.StatusBadRequest, "No Such Email Registered.New User?Sign Up If You Are Using New Account.")
+		json.NewEncoder(w).Encode(logInFailure)
+		return
+	}
 
-	for resultRow.Next() {
+	for {
 		var loginDbModel models.LogInDbModel
 		if err := resultRow.Scan(
 			&loginDbModel.UserName,
@@ -104,30 +120,21 @@ WHERE u.email = (?);
 		}
 		//@ make funcition to do below 5 + 5 + 5 lines , take logindbmodel as arguement and checknull there , then append then do other things . just improve readability .can use pointersas well when dealing with global things.
 		token = functions.CheckDbNullString(&loginDbModel.Token)
-		pdfFileName := functions.CheckDbNullString(&loginDbModel.PdfFileName)
-		audioFileName := functions.CheckDbNullString(&loginDbModel.AudioFileName)
-		photoFileName := functions.CheckDbNullString(&loginDbModel.PhotoFileName)
-		videoFileName := functions.CheckDbNullString(&loginDbModel.VideoFileName)
-		textFileName := functions.CheckDbNullString(&loginDbModel.TextFileName)
+		mediaMapStructureInitialize = *functions.CheckDbNullStringAndReturnMap(loginDbModel, &mediaMapStructureInitialize)
 
-		mediaMapStructureInitialize.AudiosList = append(mediaMapStructureInitialize.AudiosList, audioFileName)
-		mediaMapStructureInitialize.PdfsList = append(mediaMapStructureInitialize.PdfsList, pdfFileName)
-		mediaMapStructureInitialize.PhotosList = append(mediaMapStructureInitialize.PhotosList, photoFileName)
-		mediaMapStructureInitialize.VideosList = append(mediaMapStructureInitialize.VideosList, videoFileName)
-		mediaMapStructureInitialize.TextsList = append(mediaMapStructureInitialize.TextsList, textFileName)
+		if !resultRow.Next() {
+			break
+		}
 	}
 	//fornext end
 
 	//@as name implies .
-	mediaMapStructureInitialize.AudiosList = functions.RemoveDuplicatesFromList(mediaMapStructureInitialize.AudiosList)
-	mediaMapStructureInitialize.VideosList = functions.RemoveDuplicatesFromList(mediaMapStructureInitialize.VideosList)
-	mediaMapStructureInitialize.PhotosList = functions.RemoveDuplicatesFromList(mediaMapStructureInitialize.PhotosList)
-	mediaMapStructureInitialize.TextsList = functions.RemoveDuplicatesFromList(mediaMapStructureInitialize.TextsList)
-	mediaMapStructureInitialize.PdfsList = functions.RemoveDuplicatesFromList(mediaMapStructureInitialize.PdfsList)
+
+	mediaMapStructureInitialize = functions.RemoveDuplicatesFromMapModel(mediaMapStructureInitialize)
 	mediaMapStructureInitialize.Email = logInDetails.Email
 	mediaMapStructureInitialize.Token = token
-
+	//below assignment is right , as if user exists , then we return above step only , used DoesUserExistInMap() for checking .
 	global.MediaMap[token] = mediaMapStructureInitialize
-	json.NewEncoder(w).Encode(global.MediaMap[token])
+	json.NewEncoder(w).Encode(mediaMapStructureInitialize)
 
 }
