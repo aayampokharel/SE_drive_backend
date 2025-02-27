@@ -16,6 +16,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	var logInFailure models.ErrorsModel
 	var token string
+
 	err := json.NewDecoder(r.Body).Decode(&logInDetails)
 	if err != nil {
 		logInFailure = functions.SetErrorModel(http.StatusBadRequest, "Invalid JSON format. Invalid LogIn") //error models sets the error model , nothing else .
@@ -32,8 +33,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 	getFileNamesQuery :=
-		`SELECT 
-   
+		`SELECT  
     u.userName, 
     u.isSubscribed,
     u.token,  
@@ -78,6 +78,7 @@ WHERE u.email = (?);
 	}
 	defer resultRow.Close()
 	var mediaMapStructureInitialize = models.MediaMap{ //global structure .for inserting in globalMap , thisis the structure.
+
 		VideosList: []string{},
 		PhotosList: []string{},
 		AudiosList: []string{},
@@ -90,7 +91,7 @@ WHERE u.email = (?);
 		if err := resultRow.Scan(
 			&loginDbModel.UserName,
 			&loginDbModel.IsSubscribed,
-			&token,
+			&loginDbModel.Token,
 			&loginDbModel.VideoFileName,
 			&loginDbModel.PhotoFileName,
 			&loginDbModel.PdfFileName,
@@ -102,6 +103,7 @@ WHERE u.email = (?);
 			return
 		}
 		//@ make funcition to do below 5 + 5 + 5 lines , take logindbmodel as arguement and checknull there , then append then do other things . just improve readability .can use pointersas well when dealing with global things.
+		token = functions.CheckDbNullString(&loginDbModel.Token)
 		pdfFileName := functions.CheckDbNullString(&loginDbModel.PdfFileName)
 		audioFileName := functions.CheckDbNullString(&loginDbModel.AudioFileName)
 		photoFileName := functions.CheckDbNullString(&loginDbModel.PhotoFileName)
@@ -122,6 +124,8 @@ WHERE u.email = (?);
 	mediaMapStructureInitialize.PhotosList = functions.RemoveDuplicatesFromList(mediaMapStructureInitialize.PhotosList)
 	mediaMapStructureInitialize.TextsList = functions.RemoveDuplicatesFromList(mediaMapStructureInitialize.TextsList)
 	mediaMapStructureInitialize.PdfsList = functions.RemoveDuplicatesFromList(mediaMapStructureInitialize.PdfsList)
+	mediaMapStructureInitialize.Email = logInDetails.Email
+	mediaMapStructureInitialize.Token = token
 
 	global.MediaMap[token] = mediaMapStructureInitialize
 	json.NewEncoder(w).Encode(global.MediaMap[token])

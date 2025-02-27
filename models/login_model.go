@@ -12,6 +12,7 @@ type LogInResponseModel struct {
 }
 
 type LogInDbModel struct {
+	Token         sql.NullString
 	UserName      string
 	IsSubscribed  bool
 	VideoFileName sql.NullString
