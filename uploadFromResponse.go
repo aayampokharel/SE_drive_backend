@@ -7,7 +7,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"time"
 )
 
 func uploadFromResponse(w http.ResponseWriter, filePath string, contentType string, chunkSize int) {
@@ -81,7 +80,7 @@ func uploadFromResponse(w http.ResponseWriter, filePath string, contentType stri
 			}()
 			<-ch //just for ensuring part.write completes
 
-			time.Sleep(4 * time.Second)
+			//time.Sleep(4 * time.Second)
 		}
 
 		// Close the writer when done

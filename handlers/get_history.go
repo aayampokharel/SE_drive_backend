@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"SE_drive_backend/functions"
+	errors "SE_drive_backend/Errors"
 	"SE_drive_backend/models"
 	"encoding/json"
 	"net/http"
@@ -16,7 +16,7 @@ func GetHistory(w http.ResponseWriter, r *http.Request) {
 
 	var failure models.ErrorsModel
 	if mediaType := r.Header.Get("Accept"); mediaType == "multipart/form-data" {
-		failure = functions.SetErrorModel(http.StatusBadRequest, "Header not able to accept multipart/form-data mediaTypes.")
+		failure = errors.SetErrorModel(http.StatusBadRequest, "Header not able to accept multipart/form-data mediaTypes.")
 		json.NewEncoder(w).Encode(failure)
 		return
 

@@ -18,11 +18,11 @@ func uploadText(w http.ResponseWriter, r *http.Request) {
 	}
 
 	file, header, err := r.FormFile("Text")
-	defer file.Close()
 	if err != nil {
 		fmt.Print("error while assigning Text file")
 		log.Fatal(err)
 	}
+	defer file.Close()
 
 	newTextFile, er := os.Create("./uploadedTexts/" + replaceSpaceInFileName(header.Filename))
 	if er != nil {

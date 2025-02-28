@@ -5,37 +5,30 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 )
 
 func main() {
-
 	router := chi.NewRouter()
 
-	router.Post("/signin", func(w http.ResponseWriter, r *http.Request) {
-		handlers.SignIn(w, r)
-	})
-	router.Post("/login", func(w http.ResponseWriter, r *http.Request) {
-		handlers.Login(w, r)
-	})
+	// Apply CORS middleware
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://127.0.0.1:5500", "http://localhost:5500"}, // Allow frontend
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
-	router.Post("/uploadphotos", func(w http.ResponseWriter, r *http.Request) {
-		uploadPhoto(w, r)
-	})
-	router.Post("/uploadvideos", func(w http.ResponseWriter, r *http.Request) {
-		uploadVideo(w, r)
-	})
-	router.Post("/uploadaudios", func(w http.ResponseWriter, r *http.Request) {
-		uploadAudio(w, r)
-	})
-	router.Post("/uploadtexts", func(w http.ResponseWriter, r *http.Request) {
-		uploadText(w, r)
-	})
-	router.Post("/uploadpdfs", func(w http.ResponseWriter, r *http.Request) {
-		uploadPdf(w, r)
-	})
-	router.Post("/getsavedphotos", func(w http.ResponseWriter, r *http.Request) {
-		handlers.GetSavedPhotos(w, r)
-	})
+	// Define routes
+	router.Post("/signin", handlers.SignIn)
+	router.Post("/login", handlers.Login)
+	router.Post("/uploadphotos", uploadPhoto)
+	router.Post("/uploadvideos", uploadVideo)
+	router.Post("/uploadaudios", uploadAudio)
+	router.Post("/uploadtexts", uploadText)
+	router.Post("/uploadpdfs", uploadPdf)
+	router.Post("/getsavedmedia", handlers.GetSavedMedia)
+
+	// Start the server
 	http.ListenAndServe(":8000", router)
-	//http.ListenAndServe(":41114", router) //for my testing in android studio
 }

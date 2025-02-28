@@ -13,7 +13,7 @@ func uploadPdf(w http.ResponseWriter, r *http.Request) {
 	handlers.CORSFix(w, r)
 	er := r.ParseMultipartForm(10 << 20)
 	if er != nil {
-		fmt.Print("eror while parsing pdf")
+		fmt.Print("error while parsing pdf")
 
 		log.Fatal(er)
 

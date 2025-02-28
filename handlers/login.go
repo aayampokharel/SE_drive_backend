@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	errors "SE_drive_backend/Errors"
 	"SE_drive_backend/functions"
 	"SE_drive_backend/global"
 	"SE_drive_backend/models"
@@ -12,6 +13,8 @@ import (
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Print("cors error from login ")
 	var logInDetails models.LogInRequestModel
 
 	var logInFailure models.ErrorsModel
@@ -19,7 +22,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&logInDetails)
 	if err != nil {
-		logInFailure = functions.SetErrorModel(http.StatusBadRequest, "Invalid JSON format. Invalid LogIn") //error models sets the error model , nothing else .
+		logInFailure = errors.SetErrorModel(http.StatusBadRequest, "Invalid JSON format. Invalid LogIn") //error models sets the error model , nothing else .
 		json.NewEncoder(w).Encode(logInFailure)
 
 		return
@@ -38,7 +41,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	db, dbErr := functions.DbConnect(w)
 	if dbErr != nil {
-		logInFailure = functions.SetErrorModel(http.StatusBadRequest, "error while connecting to DB during Login.")
+		logInFailure = errors.SetErrorModel(http.StatusBadRequest, "error while connecting to DB during Login.")
 		json.NewEncoder(w).Encode(logInFailure)
 		return
 	}
@@ -83,7 +86,7 @@ WHERE u.email = (?);
 `
 	resultRow, err := db.Query(getFileNamesQuery, logInDetails.Email)
 	if err != nil {
-		logInFailure = functions.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error while fetching results from db from gethistory.%s", err))
+		logInFailure = errors.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error while fetching results from db from gethistory.%s", err))
 		json.NewEncoder(w).Encode(logInFailure)
 		return
 	}
@@ -97,7 +100,7 @@ WHERE u.email = (?);
 		PdfsList:   []string{},
 	}
 	if !resultRow.Next() {
-		logInFailure = functions.SetErrorModel(http.StatusBadRequest, "No Such Email Registered.New User?Sign Up If You Are Using New Account.")
+		logInFailure = errors.SetErrorModel(http.StatusBadRequest, "No Such Email Registered.New User?Sign Up If You Are Using New Account.")
 		json.NewEncoder(w).Encode(logInFailure)
 		return
 	}
@@ -114,7 +117,7 @@ WHERE u.email = (?);
 			&loginDbModel.AudioFileName,
 			&loginDbModel.TextFileName,
 		); err != nil {
-			logInFailure = functions.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("Error scanning row: %s", err))
+			logInFailure = errors.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("Error scanning row: %s", err))
 			json.NewEncoder(w).Encode(logInFailure)
 			return
 		}
