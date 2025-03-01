@@ -8,18 +8,18 @@ import (
 
 // # add type here to check for single pic or list of pics(during login .)
 func StreamMediaList(w http.ResponseWriter, mediaMapModelRepres models.MediaMap, mediaType string) {
-	//var streamingMediaError models.ErrorsModel
+
 	var mediaList []string
 	var chunkSize int
-	multiPartWriter := multipart.NewWriter(w)
-	defer multiPartWriter.Close()
+
 	switch mediaType {
 	case "Photo":
 		mediaList = mediaMapModelRepres.PhotosList
 
+		chunkSize = 500 * 1024
 	case "Video":
 		mediaList = mediaMapModelRepres.VideosList
-		chunkSize = 2 * 1024 * 1024
+		chunkSize = 2 * 1024 * 1024 //1024 *1024 =1024 kb
 	case "Audio":
 		mediaList = mediaMapModelRepres.AudiosList
 		chunkSize = 256 * 1024
@@ -36,8 +36,18 @@ func StreamMediaList(w http.ResponseWriter, mediaMapModelRepres models.MediaMap,
 	}
 
 	//w.Header().Set("Content-Type", multiPartWriter.FormDataContentType())
+	writer := multipart.NewWriter(w)
+	defer writer.Close()
+	boundary := writer.Boundary()
+
+	// Set response headers
+	w.Header().Set("Content-Type", "multipart/form-data; boundary="+boundary)
+	w.Header().Set("Transfer-Encoding", "chunked")
+
+	// Flush the headers
+	w.(http.Flusher).Flush()
 
 	for _, mediaListValue := range mediaList {
-		UploadStreamInResponse(w, mediaListValue, mediaType, chunkSize)
+		UploadStreamInResponse(w, mediaListValue, mediaType, chunkSize, writer)
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"SE_drive_backend/global"
 	"SE_drive_backend/models"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -15,7 +14,7 @@ import (
 func GetSavedMedia(w http.ResponseWriter, r *http.Request) {
 	//@ Token is required .
 	//@ so only after proper Login as savedhistory is only of the user .
-	CORSFix(w, r)
+
 	var getSavedPhotosModel models.GetSavedPhotosModel
 	var getSavedPhotosError models.ErrorsModel
 	var mediaType string = r.URL.Query().Get("type")
@@ -26,8 +25,6 @@ func GetSavedMedia(w http.ResponseWriter, r *http.Request) {
 
 	json.NewDecoder(r.Body).Decode(&getSavedPhotosModel)
 
-	fmt.Print("\n\nhello inside getSavedMedia\n\n\n")
-	fmt.Print(mediaType)
 	mediaMapModelRepres, ok := global.MediaMap[getSavedPhotosModel.Token]
 	if !ok {
 		getSavedPhotosError = errors.SetErrorModel(http.StatusBadRequest, "Token invalid while getting saved Photos.")
@@ -36,9 +33,5 @@ func GetSavedMedia(w http.ResponseWriter, r *http.Request) {
 
 	}
 	defer media_processing.StreamMediaList(w, mediaMapModelRepres, mediaType)
-	//defer functions.UploadFromResponse(w, outputPhotoFileStr, "Photo", 1024*250)
-
-	//defer fmt.Print("done")
-	//.media_processing.UploadStreamInResponse(w)
 
 }
