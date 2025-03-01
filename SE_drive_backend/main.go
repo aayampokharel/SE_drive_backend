@@ -13,7 +13,7 @@ func main() {
 
 	// Apply CORS middleware
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"}, // Allow frontend
+		AllowedOrigins:   []string{"*"}, //
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,

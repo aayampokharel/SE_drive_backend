@@ -33,8 +33,8 @@ VALUES
 create table if not exists VideoTable(
     count int AUTO_INCREMENT primary key,
     token varchar(50) not null,
-    originalVideoFileName varchar(150) not null,
-    outputVideoFileName varchar(150) not null
+    originalVideoFileName varchar(150) unique not null,
+    outputVideoFileName varchar(150) unique not null
 );
 
 -- Insert data into VideoTable
@@ -47,8 +47,8 @@ VALUES
 create table if not exists PhotoTable(
     count int AUTO_INCREMENT primary key,
     token varchar(50) not null,
-    originalPhotoFileName varchar(150) not null,
-    outputPhotoFileName varchar(150) not null
+    originalPhotoFileName varchar(150)unique not null,
+    outputPhotoFileName varchar(150) unique not null
 );
 
 -- Insert data into PhotoTable
@@ -61,8 +61,8 @@ VALUES
 create table if not exists PdfTable(
     count int AUTO_INCREMENT primary key,
     token varchar(50) not null,
-    originalPdfFileName varchar(150) not null,
-    outputPdfFileName varchar(150) not null
+    originalPdfFileName varchar(150)unique not null,
+    outputPdfFileName varchar(150) unique not null
 );
 
 -- Insert data into PdfTable
@@ -75,8 +75,8 @@ VALUES
 create table if not exists AudioTable(
     count int AUTO_INCREMENT primary key,
     token varchar(50) not null,
-    originalAudioFileName varchar(150) not null,
-    outputAudioFileName varchar(150) not null
+    originalAudioFileName varchar(150)unique not null,
+    outputAudioFileName varchar(150)unique not null
 );
 
 -- Insert data into AudioTable
@@ -89,8 +89,8 @@ VALUES
 create table if not exists TextTable(
     count int AUTO_INCREMENT primary key,
     token varchar(50) not null,
-    originalTextFileName varchar(150) not null,
-    outputTextFileName varchar(150) not null
+    originalTextFileName varchar(150)unique not null,
+    outputTextFileName varchar(150)unique not null
 );
 
 -- Insert data into TextTable
@@ -103,8 +103,8 @@ INSERT INTO TextTable (token, originalTextFileName, outputTextFileName)
 VALUES 
 ("token123", "original_importantFile.txt", "output_importantFile.txt");
 -- Select query to see file names based on subscription status
+select * from usert;
 SELECT 
-    u.email,
     u.userName, 
     u.isSubscribed,
     u.token,  
@@ -140,4 +140,5 @@ LEFT JOIN PdfTable pdf ON u.token = pdf.token
 LEFT JOIN AudioTable a ON u.token = a.token
 LEFT JOIN TextTable t ON u.token = t.token
 WHERE u.email = "testuser1@gmail.com";  -- Change to the desired email
-
+select * from userinfotable;
+-- drop database ctrlplussave;
