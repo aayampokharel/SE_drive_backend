@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        #status {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        #imageContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .image-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 300px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .image-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .image-info {
+            padding: 10px;
+            background-color: #f8f8f8;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Streaming Images</h1>
+    <p id="status">Waiting for stream...</p>
+    <div id="imageContainer"></div>
+
+    <script>
+        async function fetchImages() {
+            try {
+                const statusElement = document.getElementById("status");
+                const imageContainer = document.getElementById("imageContainer");
+
+                statusElement.innerText = "Connecting...";
+
+                const response = await fetch("http://localhost:8000/getsavedmedia", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ "token_id": "550c3a1b-310d-4388-9890-b489ca9ba7b4" }),
+                });
+
+                if (!response.ok) {
+                    console.error("Failed to fetch images:", response.statusText);
+                    statusElement.innerText = `Failed to fetch images! Status: ${response.status} - ${response.statusText}`;
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const contentType = response.headers.get("Content-Type");
+
+                let boundary = "";
+                if (contentType.includes("boundary=")) {
+                    boundary = "--" + contentType.split("boundary=")[1].trim();
+                    console.log("Boundary detected:", boundary);
+                } else {
+                    console.error("No boundary found in Content-Type");
+                    return;
+                }
+
+                let buffer = new Uint8Array(0);
+                let imageCount = 0;
+
+                statusElement.innerText = "Receiving images...";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    // Append new data to the buffer
+                    let newBuffer = new Uint8Array(buffer.length + value.length);
+                    newBuffer.set(buffer);
+                    newBuffer.set(value, buffer.length);
+                    buffer = newBuffer;
+
+                    // Process the buffer for image parts
+                    let boundaryIndex = findBoundaryIndex(buffer, boundary);
+                    while (boundaryIndex !== -1) {
+                        let nextBoundaryIndex = findBoundaryIndex(buffer.slice(boundaryIndex + boundary.length), boundary);
+
+                        if (nextBoundaryIndex !== -1) {
+                            // Extract the part between boundaries
+                            const part = buffer.slice(boundaryIndex + boundary.length, boundaryIndex + boundary.length + nextBoundaryIndex);
+                            processImagePart(part);
+                            imageCount++;
+
+                            // Remove the processed part from the buffer
+                            buffer = buffer.slice(boundaryIndex + boundary.length + nextBoundaryIndex);
+                            boundaryIndex = findBoundaryIndex(buffer, boundary);
+                        } else {
+                            break; // Wait for more data
+                        }
+                    }
+                }
+
+                statusElement.innerText = `Complete! Received ${imageCount} images.`;
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById("status").innerText = "Error fetching images: " + error.message;
+            }
+        }
+
+        // Helper function to find the boundary index in a Uint8Array
+        function findBoundaryIndex(buffer, boundary) {
+            const boundaryBytes = new TextEncoder().encode(boundary);
+            for (let i = 0; i <= buffer.length - boundaryBytes.length; i++) {
+                let match = true;
+                for (let j = 0; j < boundaryBytes.length; j++) {
+                    if (buffer[i + j] !== boundaryBytes[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) return i;
+            }
+            return -1;
+        }
+
+        function processImagePart(part) {
+            const textDecoder = new TextDecoder("utf-8");
+            const partString = textDecoder.decode(part);
+
+            const headersEnd = partString.indexOf("\r\n\r\n");
+            if (headersEnd === -1) return;
+
+            const headers = partString.substring(0, headersEnd);
+            const filenameMatch = headers.match(/filename="([^"]+)"/);
+            const filename = filenameMatch ? filenameMatch[1] : `image_${Date.now()}`;
+
+            // Extract binary data (skip headers and two CRLFs)
+            const binaryStart = headersEnd + 4;
+            const imageData = part.slice(binaryStart);
+
+            if (imageData.length > 0) {
+                const blob = new Blob([imageData], { type: "image/jpeg" });
+                displayImage(blob, filename);
+            }
+        }
+
+        function displayImage(blob, filename) {
+            const imageCard = document.createElement("div");
+            imageCard.className = "image-card";
+
+            const imgElement = document.createElement("img");
+            imgElement.src = URL.createObjectURL(blob);
+            imgElement.alt = filename;
+            imgElement.onload = () => URL.revokeObjectURL(imgElement.src);
+
+            const infoDiv = document.createElement("div");
+            infoDiv.className = "image-info";
+            infoDiv.textContent = filename;
+
+            imageCard.appendChild(imgElement);
+            imageCard.appendChild(infoDiv);
+            document.getElementById("imageContainer").appendChild(imageCard);
+        }
+
+        window.addEventListener('DOMContentLoaded', fetchImages);
+    </script>
+</body>
+
+</html>
