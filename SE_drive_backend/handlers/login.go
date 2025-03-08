@@ -14,7 +14,6 @@ import (
 
 func Login(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Print("cors error from login ")
 	var logInDetails models.LogInRequestModel
 
 	var logInFailure models.ErrorsModel
@@ -33,7 +32,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	mapModelValue, ok := functions.DoesUserExistInMap(logInDetails.Email)
 	if ok {
-		fmt.Print("\n\n\n\n from inside map =====\n\n\n\n")
+		//!token not intialized till now .
+		global.AddAllToMediaMap(mapModelValue.Token)
+
 		json.NewEncoder(w).Encode(mapModelValue)
 		return
 
@@ -75,7 +76,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
         WHEN u.isSubscribed = FALSE THEN t.outputTextFileName
         ELSE t.originalTextFileName
     END AS TextFileName
-
+                         
 FROM UserInfoTable u
 LEFT JOIN VideoTable v ON u.token = v.token
 LEFT JOIN PhotoTable p ON u.token = p.token
@@ -105,8 +106,8 @@ WHERE u.email = (?);
 		return
 	}
 
+	var loginDbModel models.LogInDbModel
 	for {
-		var loginDbModel models.LogInDbModel
 		if err := resultRow.Scan(
 			&loginDbModel.UserName,
 			&loginDbModel.IsSubscribed,
@@ -129,6 +130,23 @@ WHERE u.email = (?);
 			break
 		}
 	}
+
+	if loginDbModel.IsSubscribed {
+		var trialsLeft int
+		queryToFetchTrialsNumber := `Select trialsLeft from trialstable where token=(?)`
+		er := db.QueryRow(queryToFetchTrialsNumber, loginDbModel.Token).Scan(&trialsLeft)
+		if er != nil {
+
+			logInFailure = errors.SetErrorModel(http.StatusBadRequest, "error while returning trialsleft in login . contact server man . ")
+			json.NewEncoder(w).Encode(logInFailure)
+			return
+		}
+		global.LogInInit(token, trialsLeft, loginDbModel.IsSubscribed)
+
+	} else {
+		global.LogInInit(token, -1, loginDbModel.IsSubscribed)
+
+	}
 	//fornext end
 
 	//@as name implies .
@@ -137,7 +155,7 @@ WHERE u.email = (?);
 	mediaMapStructureInitialize.Email = logInDetails.Email
 	mediaMapStructureInitialize.Token = token
 	//below assignment is right , as if user exists , then we return above step only , used DoesUserExistInMap() for checking .
-	global.MediaMap[token] = mediaMapStructureInitialize
+	global.MediaMap[token] = &mediaMapStructureInitialize
 	json.NewEncoder(w).Encode(global.MediaMap[token])
 
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	errors "SE_drive_backend/Errors"
 	"SE_drive_backend/functions"
+	"SE_drive_backend/global"
 	"database/sql"
 	"fmt"
 
@@ -12,17 +13,18 @@ import (
 )
 
 func SignIn(w http.ResponseWriter, r *http.Request) {
-	CORSFix(w, r)
-	//define required datasets .
+
+	//______define required datasets .
 	var signUpRequestDetails models.SignUpRequestModel
 	var signInFailure models.ErrorsModel
+	//# ____decode
 	err := json.NewDecoder(r.Body).Decode(&signUpRequestDetails)
 	if err != nil {
 		signInFailure = errors.SetErrorModel(http.StatusBadRequest, "Invalid JSON format. Invalid SignIn.")
 		json.NewEncoder(w).Encode(signInFailure)
 		return
 	}
-	//db connection .
+	//#_______db connection .
 	db, err := functions.DbConnect(w)
 	if err != nil {
 		signInFailure = errors.SetErrorModel(http.StatusBadRequest, "Failed Db connection during SignIn.Bad Request")
@@ -40,28 +42,33 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	//token
 	token := functions.GenerateUUID()
 	var dbNameCheck string
+	//# checks if the email is already registered or not ______
 	userCheckQuery := `SELECT email FROM UserInfoTable WHERE email=(?);`
 	userInsertQuery := `Insert into UserInfoTable(email,userName,userPassword,isSubscribed,token) values (?,?,?,false,?);`
 
 	er := db.QueryRow(userCheckQuery, signUpRequestDetails.Email).Scan(&dbNameCheck)
 	if er != nil {
 		if er == sql.ErrNoRows {
-			//no rows meaning user doesnot exist .
-			_, err = db.Exec(userInsertQuery, signUpRequestDetails.Email, signUpRequestDetails.Name, signUpRequestDetails.Password, token)
-			if err != nil {
-				signInFailure = errors.SetErrorModel(http.StatusBadRequest, "error while insertion in db during SignIn.")
-
+			//# new user is verified inside here i.e. no existing email in db .
+			_, insertErr := db.Exec(userInsertQuery, signUpRequestDetails.Email, signUpRequestDetails.Name, signUpRequestDetails.Password, token)
+			if insertErr != nil {
+				json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusInternalServerError, "error while sigin insertion of data into db . "))
 			}
+
+			//# below one is necessary as in signin , the person is never subscribed .
+			global.SignInInit(token)
+
 			//-successful reponse .
 			signUpResponseDetails := models.SignUpResponseModel{Message: "SignIn Successful.", TokenId: token}
 			json.NewEncoder(w).Encode(signUpResponseDetails)
-
+			return
+			//! error as why 2 different and i think belwo should be user exists and last one should be removed .
 		} else {
 			signInFailure = errors.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error occured during signin. %s", er))
+			json.NewEncoder(w).Encode(signInFailure)
+			return
 		}
 
-		json.NewEncoder(w).Encode(signInFailure)
-		return
 	}
 	signInFailure = errors.SetErrorModel(http.StatusBadRequest, "Username already exists.")
 	json.NewEncoder(w).Encode(signInFailure)

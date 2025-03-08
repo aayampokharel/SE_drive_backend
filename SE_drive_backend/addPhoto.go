@@ -3,7 +3,7 @@ package main
 import (
 	errors "SE_drive_backend/Errors"
 	"SE_drive_backend/functions"
-	"SE_drive_backend/handlers"
+	"SE_drive_backend/global"
 	"encoding/json"
 
 	"SE_drive_backend/models"
@@ -20,7 +20,6 @@ import (
 //@ its good to always defer the uploadFromResponse.
 
 func uploadPhoto(w http.ResponseWriter, r *http.Request) {
-	handlers.CORSFix(w, r)
 
 	err := r.ParseMultipartForm(20 << 20)
 	if err != nil {
@@ -34,6 +33,8 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
+	isSubscribed := global.AddedMediaMap[token].IsSubscribed
+
 	photoRequestModel := models.PhotoRequestModel{Token: token}
 
 	file, header, er := r.FormFile("Photo")
@@ -68,8 +69,15 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 
 		log.Fatal(er)
 	}
+	//can add below logic inside uploadFromResponse itself as well .
+	if !isSubscribed {
+		global.AddNewMedia(w, token, outputPhotoFileStr, "Photo")
+		defer uploadFromResponse(w, outputPhotoFileStr, "Photo", 1024*250)
+	} else {
+		global.AddNewMedia(w, token, header.Filename, "Photo")
+		defer uploadFromResponse(w, header.Filename, "Photo", 1024*250)
+	}
 
-	defer uploadFromResponse(w, outputPhotoFileStr, "Photo", 1024*250)
 	defer fmt.Print("done")
 
 	//--database execution --//
@@ -87,6 +95,7 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		// 	);
 
 	}
+
 	query := `INSERT INTO PhotoTable(token,originalPhotoFileName,outputPhotoFileName) VALUES(?,?,?)`
 
 	_, err = db.Exec(query, photoRequestModel.Token, newPhotoFile.Name(), outputPhotoFileStr)
