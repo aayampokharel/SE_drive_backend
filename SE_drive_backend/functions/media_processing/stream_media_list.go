@@ -7,7 +7,7 @@ import (
 )
 
 // # add type here to check for single pic or list of pics(during login .)
-func StreamMediaList(w http.ResponseWriter, mediaMapModelRepres models.MediaMap, mediaType string) {
+func StreamMediaList(w http.ResponseWriter, mediaMapModelRepres *models.MediaMap, mediaType string) {
 
 	var mediaList []string
 	var chunkSize int

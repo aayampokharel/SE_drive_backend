@@ -5,7 +5,7 @@ import "SE_drive_backend/models"
 //history map should update afterwards by adding the filename directly here ,
 //dutai filename huncha inside uploadAudio,uploadVideo ,and esto methods chalnu bhanda agadi map is ever ready .
 //! send token forupload as well . based on it add it to the map, and store in db as well .
-var MediaMap = make(map[string]models.MediaMap)
+var MediaMap = make(map[string]*models.MediaMap)
 
 //defining map of structure:
 //{
@@ -31,7 +31,7 @@ func MediaMapEntry(tokenKey string, mediaMapModelToAdd models.MediaMap) {
 		val.TextsList = append(val.VideosList, mediaMapModelToAdd.TextsList...)
 		MediaMap[tokenKey] = val
 	} else {
-		MediaMap[tokenKey] = mediaMapModelToAdd
+		MediaMap[tokenKey] = &mediaMapModelToAdd
 	}
 
 }

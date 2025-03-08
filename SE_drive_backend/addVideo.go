@@ -1,7 +1,6 @@
 package main
 
 import (
-	"SE_drive_backend/handlers"
 	"fmt"
 	"io"
 	"log"
@@ -14,7 +13,6 @@ import (
 func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	var fileName string
 	var videoDirectory string = "./uploadedVideos/"
-	handlers.CORSFix(w, r)
 
 	reader, err := r.MultipartReader()
 
