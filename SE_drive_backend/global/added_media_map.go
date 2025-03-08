@@ -13,12 +13,12 @@ func AddNewMedia(w http.ResponseWriter, tokenKey string, singleMedia string, typ
 	//@ deduce trail ,
 	//@ makie login .
 
-	if AddedMediaMap[tokenKey].IsSubscribed {
+	if !AddedMediaMap[tokenKey].IsSubscribed {
 		if AddedMediaMap[tokenKey].TrialsLeft <= 0 {
 			json.NewEncoder(w).Encode(models.ErrorsModel{StatusCode: http.StatusInternalServerError, Err: "Trials period is over . Subscribe. "})
 			return
 		} else {
-			AddedMediaMap[tokenKey].TrialsLeft -= 1
+			AddedMediaMap[tokenKey].TrialsLeft = AddedMediaMap[tokenKey].TrialsLeft - 1
 		}
 
 	}

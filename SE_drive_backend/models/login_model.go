@@ -10,7 +10,6 @@ type LogInRequestModel struct {
 type LogInResponseModel struct {
 	IsSubscribed bool      `json:"is_subscribed"`
 	TrialsLeft   int       `json:"trials_left"`
-	Token        string    `json:"token_id"`
 	MediaList    *MediaMap `json:"media_list"`
 }
 

@@ -32,10 +32,16 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	//# check if user exists in map , that is the connection is alive in some somewhere else as well at the same time ..............
 	mapModelValue, ok := functions.DoesUserExistInMap(logInDetails.Email)
 	if ok {
+		//! error in login to be fixed .
 		//  redundant or duplicates .
 		// global.AddAllToMediaMap(mapModelValue.Token)
+		fmt.Print("yes from insdie okay ")
+		json.NewEncoder(w).Encode(models.LogInResponseModel{
+			IsSubscribed: global.AddedMediaMap[mapModelValue.Token].IsSubscribed,
+			TrialsLeft:   global.AddedMediaMap[mapModelValue.Token].TrialsLeft,
 
-		json.NewEncoder(w).Encode(mapModelValue)
+			MediaList: &mapModelValue,
+		})
 		return
 
 	}
@@ -158,8 +164,8 @@ WHERE u.email = (?);
 	logInResponseDetails = models.LogInResponseModel{
 		IsSubscribed: loginDbModel.IsSubscribed,
 		TrialsLeft:   trialsLeft,
-		Token:        token,
-		MediaList:    global.MediaMap[token],
+
+		MediaList: global.MediaMap[token],
 	}
 	json.NewEncoder(w).Encode(logInResponseDetails)
 
