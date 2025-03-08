@@ -8,9 +8,10 @@ type LogInRequestModel struct {
 }
 
 type LogInResponseModel struct {
-	MessageStatus         string
-	OriginalPhotoFileName string // this is also required as compare garna pani as file upload shouldnot be same and compare with tis .
-	OutputPhotoFileName   string
+	IsSubscribed bool      `json:"is_subscribed"`
+	TrialsLeft   int       `json:"trials_left"`
+	Token        string    `json:"token_id"`
+	MediaList    *MediaMap `json:"media_list"`
 }
 
 type LogInDbModel struct {

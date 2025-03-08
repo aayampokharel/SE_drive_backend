@@ -7,6 +7,8 @@ type SignUpRequestModel struct {
 }
 
 type SignUpResponseModel struct {
-	TokenId string `json:"token_id"`
-	Message string `json:"message"`
+	TokenId      string `json:"token_id"`
+	IsSubscribed bool   `json:"is_subscribed"`
+	TrialsLeft   int    `json:"trials_left"`
+	Message      string `json:"message"`
 }

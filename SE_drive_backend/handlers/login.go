@@ -15,10 +15,10 @@ import (
 func Login(w http.ResponseWriter, r *http.Request) {
 
 	var logInDetails models.LogInRequestModel
-
+	var logInResponseDetails models.LogInResponseModel
 	var logInFailure models.ErrorsModel
 	var token string
-
+	//# decode process ...........
 	err := json.NewDecoder(r.Body).Decode(&logInDetails)
 	if err != nil {
 		logInFailure = errors.SetErrorModel(http.StatusBadRequest, "Invalid JSON format. Invalid LogIn") //error models sets the error model , nothing else .
@@ -29,17 +29,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	//! password not checked ,only email verified in db .
 
 	//check if user is already in globalMap to prevent unnecessary call of db .
-
+	//# check if user exists in map , that is the connection is alive in some somewhere else as well at the same time ..............
 	mapModelValue, ok := functions.DoesUserExistInMap(logInDetails.Email)
 	if ok {
-		//!token not intialized till now .
-		global.AddAllToMediaMap(mapModelValue.Token)
+		//  redundant or duplicates .
+		// global.AddAllToMediaMap(mapModelValue.Token)
 
 		json.NewEncoder(w).Encode(mapModelValue)
 		return
 
 	}
-
+	//# if not in map ,i.e. logging in for first time .................
 	db, dbErr := functions.DbConnect(w)
 	if dbErr != nil {
 		logInFailure = errors.SetErrorModel(http.StatusBadRequest, "error while connecting to DB during Login.")
@@ -131,13 +131,13 @@ WHERE u.email = (?);
 		}
 	}
 
-	if loginDbModel.IsSubscribed {
-		var trialsLeft int
+	var trialsLeft int
+	if !loginDbModel.IsSubscribed {
 		queryToFetchTrialsNumber := `Select trialsLeft from trialstable where token=(?)`
 		er := db.QueryRow(queryToFetchTrialsNumber, loginDbModel.Token).Scan(&trialsLeft)
 		if er != nil {
 
-			logInFailure = errors.SetErrorModel(http.StatusBadRequest, "error while returning trialsleft in login . contact server man . ")
+			logInFailure = errors.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error while returning trialsleft in login . contact server man . %s", er))
 			json.NewEncoder(w).Encode(logInFailure)
 			return
 		}
@@ -147,7 +147,6 @@ WHERE u.email = (?);
 		global.LogInInit(token, -1, loginDbModel.IsSubscribed)
 
 	}
-	//fornext end
 
 	//@as name implies .
 
@@ -156,6 +155,12 @@ WHERE u.email = (?);
 	mediaMapStructureInitialize.Token = token
 	//below assignment is right , as if user exists , then we return above step only , used DoesUserExistInMap() for checking .
 	global.MediaMap[token] = &mediaMapStructureInitialize
-	json.NewEncoder(w).Encode(global.MediaMap[token])
+	logInResponseDetails = models.LogInResponseModel{
+		IsSubscribed: loginDbModel.IsSubscribed,
+		TrialsLeft:   trialsLeft,
+		Token:        token,
+		MediaList:    global.MediaMap[token],
+	}
+	json.NewEncoder(w).Encode(logInResponseDetails)
 
 }
