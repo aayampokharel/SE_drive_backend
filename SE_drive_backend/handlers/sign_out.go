@@ -13,7 +13,6 @@ import (
 func SignOut(w http.ResponseWriter, r *http.Request) {
 	//insert all thngs from added maps into db .
 
-	//remove key from 2 maps .
 	var signOutRequestModel models.SignOutRequestModel
 	// var signOutResponseModel models.SignOutResponseModel
 
@@ -36,12 +35,7 @@ func SignOut(w http.ResponseWriter, r *http.Request) {
 			"Token not found in MediaMap."))
 		return
 	}
-	fmt.Print(data.TrialsLeft)
-	fmt.Print(data.TrialsLeft)
-	fmt.Print(data.TrialsLeft)
-	fmt.Print(data.TrialsLeft)
 
-	// fmt.Print("\n\n\n 💦💦💦", data.Token, "\n", signOutRequestModel.Token, data.TrialsLeft, "\n\n\n")
 	trialsInsert := `insert into trialstable(token,trialsLeft) values(?,?)
 	 ON DUPLICATE KEY UPDATE trialsLeft = VALUES(trialsLeft)`
 	_, insertTrialErr := db.Exec(trialsInsert, signOutRequestModel.Token, data.TrialsLeft)
@@ -50,7 +44,7 @@ func SignOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	delete(global.MediaMap, signOutRequestModel.Token)
-	delete(global.MediaMap, signOutRequestModel.Token)
-	json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadRequest, "sign Out successful!"))
+
+	json.NewEncoder(w).Encode(models.SignOutResponseModel{Message: "sign out successful .", StatusCode: 200})
 
 }

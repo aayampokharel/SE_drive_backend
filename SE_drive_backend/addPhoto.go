@@ -2,30 +2,32 @@ package main
 
 import (
 	errors "SE_drive_backend/Errors"
-	"SE_drive_backend/functions"
+	"SE_drive_backend/common"
 	"SE_drive_backend/global"
 	"encoding/json"
 
-	"SE_drive_backend/models"
-	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"os"
-	"os/exec"
+
 	"path/filepath"
 	"strings"
+)
+
+const (
+	maxUploadSize = 20 << 20 //20mb
+	photoType     = "Photo"
+	chunkSize     = 1024 * 250
 )
 
 //@ its good to always defer the uploadFromResponse.
 
 func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 
-	err := r.ParseMultipartForm(20 << 20)
-	if err != nil {
-
-		log.Fatal("Size not enough . ")
+	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
+		json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadRequest, "file size exceeds the alloted limit of 20mb ."))
+		return
 	}
+
 	//# token_id sent in multipart itself ,
 	token := r.FormValue("token_id")
 	if token == "" {
@@ -34,94 +36,50 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
-	isSubscribed := global.MediaMap[token].IsSubscribed
 
-	photoRequestModel := models.PhotoRequestModel{Token: token}
-
-	file, header, er := r.FormFile("Photo")
+	file, header, er := r.FormFile(photoType)
 	if er != nil {
 
-		log.Fatal(er)
-	}
-	defer file.Close()
-
-	originalFileName := replaceSpaceInFileName(header.Filename)
-	inputPhotoFileStr := "./uploadedPhotos/" + originalFileName
-	newPhotoFile, er := os.Create(inputPhotoFileStr)
-	if er != nil {
-
-		log.Fatal(er)
-	}
-	defer newPhotoFile.Close()
-	_, er = io.Copy(newPhotoFile, file)
-	if er != nil {
-
-		log.Fatal(er)
-	}
-	baseName := strings.TrimSuffix(originalFileName, filepath.Ext(originalFileName))
-	outputPhotoFileStr := "./uploadedPhotos/" + "output_" + baseName + ".jpeg"
-	//ffmpeg -i input.png output.jpg
-	//@ extensions checking left ....! undone !
-	cmdStr := fmt.Sprintf("ffmpeg -i %s -qscale:v 31 -f image2 -vcodec mjpeg %s", newPhotoFile.Name(), outputPhotoFileStr)
-	cmd := exec.Command("cmd", "/C", cmdStr)
-
-	er = cmd.Run()
-	if er != nil {
-
-		log.Fatal(er)
-	}
-	//can add below logic inside uploadFromResponse itself as well .
-
-	defer fmt.Print("done")
-
-	//--database execution --//
-	db, err := functions.DbConnect(w)
-
-	if err != nil {
-
-		json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error while connecting to db while uploading photo.%s", err)))
-
-		// create table if not exists VideoTable(
-		// 	count int AUTO_INCREMENT primary key,
-		// 	token varchar(50) not null,
-		// 	videoFileName varchar(150) not null
-
-		// 	);
-
-	}
-	if !isSubscribed {
-		if modelError, ok := global.AddNewMedia(token, outputPhotoFileStr, "Photo"); !ok {
-			json.NewEncoder(w).Encode(modelError)
-			return
-		}
-
-	} else {
-		global.AddNewMedia(token, newPhotoFile.Name(), "Photo")
-
-	}
-
-	query := `INSERT INTO PhotoTable(token,originalPhotoFileName,outputPhotoFileName) VALUES(?,?,?)`
-
-	_, err = db.Exec(query, photoRequestModel.Token, newPhotoFile.Name(), outputPhotoFileStr)
-	if err != nil {
-		if !isSubscribed {
-			global.MediaMap[token].TrialsLeft += 1
-		}
-		json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadGateway, fmt.Sprintf("Error while executing insertion in db for photo.%s", err)))
-
-		//! make separate folders for each user and store media there .
-		//! test for issubscribed as well .
-
+		json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadRequest, "Failed to retrieve file"))
 		return
 	}
-	if !isSubscribed {
+	defer file.Close()
+	userDir := filepath.Join("./uploadedPhotos", token)
+	if err := os.MkdirAll(userDir, os.ModePerm); err != nil {
+		json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusInternalServerError, "Failed to create user directory"))
+		return
+	}
+	originalFileName := replaceSpaceInFileName(header.Filename)
+	inputPhotoFilePath := filepath.Join(userDir, replaceSpaceInFileName(header.Filename))
 
-		uploadFromResponse(w, outputPhotoFileStr, "Photo", 1024*250)
-	} else {
-
-		uploadFromResponse(w, newPhotoFile.Name(), "Photo", 1024*250)
+	//!make a create and save function to be reused in other .
+	if errorValue, ok := common.SaveUploadedMediaInFolder(w, inputPhotoFilePath, file); !ok {
+		json.NewEncoder(w).Encode(errorValue)
+		return
+	}
+	outputPhotoFilePath := filepath.Join(userDir, "output_"+strings.TrimSuffix(originalFileName, filepath.Ext(originalFileName))+".jpeg")
+	//ffmpeg -i input.png output.jpg
+	//! extensions checking left ....! undone !
+	if errorValue, ok := common.CompressMediaUsingFfmpeg(inputPhotoFilePath, outputPhotoFilePath, photoType); !ok {
+		json.NewEncoder(w).Encode(errorValue)
+		return
 	}
 
-	// json.NewEncoder(w).Encode(models.LogInResponseModel{MessageStatus: "Photo  uploaded  successfully!", OriginalPhotoFileName: newPhotoFile.Name(), OutputPhotoFileName: outputPhotoFileStr})
+	if mediaMapErrValue, ok := common.SaveMediaInfoInMap(w, token, inputPhotoFilePath, outputPhotoFilePath, photoType); !ok {
+		json.NewEncoder(w).Encode(mediaMapErrValue)
+		return
+	}
+	//--database execution --//
+	if insertMediaDbError, ok := common.InsertMediaInDb(w, token, inputPhotoFilePath, outputPhotoFilePath, photoType); !ok {
+		json.NewEncoder(w).Encode(insertMediaDbError)
+		return
+	}
+
+	if !global.MediaMap[token].IsSubscribed {
+		uploadFromResponse(w, outputPhotoFilePath, photoType, chunkSize)
+	} else {
+
+		uploadFromResponse(w, inputPhotoFilePath, photoType, chunkSize)
+	}
 
 }

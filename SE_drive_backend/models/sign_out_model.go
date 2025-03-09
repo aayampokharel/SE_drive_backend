@@ -6,5 +6,5 @@ type SignOutRequestModel struct {
 
 type SignOutResponseModel struct {
 	Message    string `json:"messsage"`
-	StatusCode string `json:"statuscode"`
+	StatusCode int    `json:"statuscode"`
 }
