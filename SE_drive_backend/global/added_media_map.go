@@ -1,6 +1,7 @@
 package global
 
 import (
+	"SE_drive_backend/functions"
 	"SE_drive_backend/models"
 	"fmt"
 	"net/http"
@@ -25,23 +26,25 @@ func AddNewMedia(tokenKey string, singleMedia string, types string) (models.Erro
 	switch types {
 	case "Photo":
 
-		MediaMap[tokenKey].PhotosList = append(MediaMap[tokenKey].PhotosList, singleMedia)
+		MediaMap[tokenKey].PhotosList =
+			functions.RemoveDuplicatesFromList(append(MediaMap[tokenKey].PhotosList, singleMedia))
+
 		fmt.Print(MediaMap[tokenKey])
 		// MediaMapEntry(tokenKey, models.MediaMap{PhotosList: []string{singleMedia}})
 		// fmt.Print(global.MediaMap[tokenKey])
 	case "Video":
-		// MediaMap[tokenKey].VideosList = append(MediaMap[tokenKey].VideosList, singleMedia)
-		MediaMapEntry(tokenKey, models.MediaMap{VideosList: []string{singleMedia}})
+		MediaMap[tokenKey].VideosList = functions.RemoveDuplicatesFromList(append(MediaMap[tokenKey].VideosList, singleMedia))
+		// MediaMapEntry(tokenKey, models.MediaMap{VideosList: []string{singleMedia}})
 	case "Audio":
-		// MediaMap[tokenKey].AudiosList = append(MediaMap[tokenKey].AudiosList, singleMedia)
-		MediaMapEntry(tokenKey, models.MediaMap{AudiosList: []string{singleMedia}})
+		MediaMap[tokenKey].AudiosList = functions.RemoveDuplicatesFromList(append(MediaMap[tokenKey].AudiosList, singleMedia))
+		//MediaMapEntry(tokenKey, models.MediaMap{AudiosList: []string{singleMedia}})
 
 	case "Pdf":
-		// MediaMap[tokenKey].PdfsList = append(MediaMap[tokenKey].PdfsList, singleMedia)
-		MediaMapEntry(tokenKey, models.MediaMap{PdfsList: []string{singleMedia}})
+		MediaMap[tokenKey].PdfsList = functions.RemoveDuplicatesFromList(append(MediaMap[tokenKey].PdfsList, singleMedia))
+		//MediaMapEntry(tokenKey, models.MediaMap{PdfsList: []string{singleMedia}})
 	case "Text":
-		// MediaMap[tokenKey].TextsList = append(MediaMap[tokenKey].PdfsList, singleMedia)
-		MediaMapEntry(tokenKey, models.MediaMap{TextsList: []string{singleMedia}})
+		MediaMap[tokenKey].TextsList = functions.RemoveDuplicatesFromList(append(MediaMap[tokenKey].PdfsList, singleMedia))
+		//MediaMapEntry(tokenKey, models.MediaMap{TextsList: []string{singleMedia}})
 
 	}
 	return models.ErrorsModel{}, true

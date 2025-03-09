@@ -30,7 +30,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	//check if user is already in globalMap to prevent unnecessary call of db .
 	//# check if user already exists in map , that is the connection is alive in some somewhere else as well at the same time ..............
-	mapModelValue, ok := functions.DoesUserExistInMap(logInDetails.Email)
+	mapModelValue, ok := global.DoesUserExistInMap(logInDetails.Email)
 	if ok {
 		//? this means that signout isnot performed , .
 
@@ -159,7 +159,7 @@ WHERE u.email = (?);
 	// mediaMapStructureInitialize.Email = logInDetails.Email
 	// mediaMapStructureInitialize.Token = token
 	//below assignment is right , as if user exists , then we return above step only , used DoesUserExistInMap() for checking .
-	global.MediaMap[token] = &mediaMapStructureInitialize
+	//global.MediaMap[token] = &mediaMapStructureInitialize
 
 	logInResponseDetails = models.LogInResponseModel{
 
