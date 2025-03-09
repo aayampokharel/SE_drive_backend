@@ -104,7 +104,9 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 
 	_, err = db.Exec(query, photoRequestModel.Token, newPhotoFile.Name(), outputPhotoFileStr)
 	if err != nil {
-		print("error 2")
+		if !isSubscribed {
+			global.MediaMap[token].TrialsLeft += 1
+		}
 		json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadGateway, fmt.Sprintf("Error while executing insertion in db for photo.%s", err)))
 
 		//! make separate folders for each user and store media there .
