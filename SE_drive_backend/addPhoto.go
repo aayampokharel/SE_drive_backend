@@ -26,6 +26,7 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 
 		log.Fatal("Size not enough . ")
 	}
+	//# token_id sent in multipart itself ,
 	token := r.FormValue("token_id")
 	if token == "" {
 
@@ -33,7 +34,7 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
-	isSubscribed := global.AddedMediaMap[token].IsSubscribed
+	isSubscribed := global.MediaMap[token].IsSubscribed
 
 	photoRequestModel := models.PhotoRequestModel{Token: token}
 
@@ -44,8 +45,8 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	fileName := "photo_" + replaceSpaceInFileName(header.Filename)
-	inputPhotoFileStr := "./uploadedPhotos/" + fileName
+	originalFileName := replaceSpaceInFileName(header.Filename)
+	inputPhotoFileStr := "./uploadedPhotos/" + originalFileName
 	newPhotoFile, er := os.Create(inputPhotoFileStr)
 	if er != nil {
 
@@ -57,7 +58,7 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 
 		log.Fatal(er)
 	}
-	baseName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	baseName := strings.TrimSuffix(originalFileName, filepath.Ext(originalFileName))
 	outputPhotoFileStr := "./uploadedPhotos/" + "output_" + baseName + ".jpeg"
 	//ffmpeg -i input.png output.jpg
 	//@ extensions checking left ....! undone !
@@ -70,13 +71,6 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(er)
 	}
 	//can add below logic inside uploadFromResponse itself as well .
-	if !isSubscribed {
-		global.AddNewMedia(w, token, outputPhotoFileStr, "Photo")
-		defer uploadFromResponse(w, outputPhotoFileStr, "Photo", 1024*250)
-	} else {
-		global.AddNewMedia(w, token, header.Filename, "Photo")
-		defer uploadFromResponse(w, header.Filename, "Photo", 1024*250)
-	}
 
 	defer fmt.Print("done")
 
@@ -95,6 +89,16 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		// 	);
 
 	}
+	if !isSubscribed {
+		if modelError, ok := global.AddNewMedia(token, outputPhotoFileStr, "Photo"); !ok {
+			json.NewEncoder(w).Encode(modelError)
+			return
+		}
+
+	} else {
+		global.AddNewMedia(token, newPhotoFile.Name(), "Photo")
+
+	}
 
 	query := `INSERT INTO PhotoTable(token,originalPhotoFileName,outputPhotoFileName) VALUES(?,?,?)`
 
@@ -102,10 +106,18 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		print("error 2")
 		json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadGateway, fmt.Sprintf("Error while executing insertion in db for photo.%s", err)))
-		//! i can also throw error by making PHOTOFILENAME UNIQUE AS WHY 2 OF SAME NAME  AND THAT IS NOT POSSIBLE AS WELL . SO TEI HO .FRON FRONTEND TELL AAKASH TO CHECK IF THE FILENAME IS SAME AS OTHER THEN ONLY SEND ELSE ERROR WILL BE THROWN .
 
-		//! ALSO DEDUCE -1 from trial photos .
+		//! make separate folders for each user and store media there .
+		//! test for issubscribed as well .
+
 		return
+	}
+	if !isSubscribed {
+
+		uploadFromResponse(w, outputPhotoFileStr, "Photo", 1024*250)
+	} else {
+
+		uploadFromResponse(w, newPhotoFile.Name(), "Photo", 1024*250)
 	}
 
 	// json.NewEncoder(w).Encode(models.LogInResponseModel{MessageStatus: "Photo  uploaded  successfully!", OriginalPhotoFileName: newPhotoFile.Name(), OutputPhotoFileName: outputPhotoFileStr})

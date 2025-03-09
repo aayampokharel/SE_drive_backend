@@ -28,6 +28,7 @@ func main() {
 	router.Post("/uploadtexts", uploadText)
 	router.Post("/uploadpdfs", uploadPdf)
 	router.Post("/getsavedmedia", handlers.GetSavedMedia)
+	router.Post("/signout", handlers.SignOut)
 
 	// Start the server
 	http.ListenAndServe(":8000", router)

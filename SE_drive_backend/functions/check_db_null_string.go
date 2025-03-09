@@ -23,6 +23,7 @@ func CheckDbNullStringAndReturnMap(loginDbModel models.LogInDbModel, mediaMapPtr
 	videoFileName := CheckDbNullString(&loginDbModel.VideoFileName)
 	textFileName := CheckDbNullString(&loginDbModel.TextFileName)
 	//-------------------------appending ----------------------||
+
 	mediaMapPtr.AudiosList = append(mediaMapPtr.AudiosList, audioFileName)
 	mediaMapPtr.PdfsList = append(mediaMapPtr.PdfsList, pdfFileName)
 	mediaMapPtr.PhotosList = append(mediaMapPtr.PhotosList, photoFileName)

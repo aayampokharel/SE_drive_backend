@@ -7,6 +7,6 @@ type SignUpRequestModel struct {
 }
 
 type SignUpResponseModel struct {
-	TokenId string `json:"token_id"`
-	Message string `json:"message"`
+	Message       string   `json:"message"`
+	MediaMapModel MediaMap `json:"map_model"`
 }

@@ -16,6 +16,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 
 	//______define required datasets .
 	var signUpRequestDetails models.SignUpRequestModel
+	var signUpResponseDetails models.SignUpResponseModel
 	var signInFailure models.ErrorsModel
 	//# ____decode
 	err := json.NewDecoder(r.Body).Decode(&signUpRequestDetails)
@@ -39,7 +40,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	// 	token varchar(50) unique not null
 	//);
 	//============_________===========
-	//token
+	//# generate token.
 	token := functions.GenerateUUID()
 	var dbNameCheck string
 	//# checks if the email is already registered or not ______
@@ -49,20 +50,31 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	er := db.QueryRow(userCheckQuery, signUpRequestDetails.Email).Scan(&dbNameCheck)
 	if er != nil {
 		if er == sql.ErrNoRows {
+
 			//# new user is verified inside here i.e. no existing email in db .
+
 			_, insertErr := db.Exec(userInsertQuery, signUpRequestDetails.Email, signUpRequestDetails.Name, signUpRequestDetails.Password, token)
 			if insertErr != nil {
 				json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusInternalServerError, "error while sigin insertion of data into db . "))
+				return
 			}
 
 			//# below one is necessary as in signin , the person is never subscribed .
-			global.SignInInit(token)
+			global.SignInInit(token, signUpRequestDetails.Email)
 
-			//-successful reponse .
-			signUpResponseDetails := models.SignUpResponseModel{Message: "SignIn Successful.", TokenId: token}
+			signUpResponseDetails = models.SignUpResponseModel{Message: "SignIn Successful.", MediaMapModel: *global.MediaMap[token]}
 			json.NewEncoder(w).Encode(signUpResponseDetails)
+
+			//______insert in trials table .
+			insertInTrialsTable := `Insert into trialstable(token,trialsLeft) values(?,?)`
+			_, trialInsertErr := db.Exec(insertInTrialsTable, token, global.MediaMap[token].TrialsLeft)
+
+			if trialInsertErr != nil {
+				json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error while insertion in trialsTable %s", trialInsertErr)))
+				return
+			}
 			return
-			//! error as why 2 different and i think belwo should be user exists and last one should be removed .
+
 		} else {
 			signInFailure = errors.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error occured during signin. %s", er))
 			json.NewEncoder(w).Encode(signInFailure)

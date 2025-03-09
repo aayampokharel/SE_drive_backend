@@ -7,7 +7,7 @@ import (
 
 func DoesUserExistInMap(userMail string) (mapModelValue models.MediaMap, ok bool) {
 	for _, mapModelValue := range global.MediaMap {
-		if mapModelValue.Email == userMail {
+		if (*mapModelValue).Email == userMail {
 			return *mapModelValue, true
 		}
 	}
