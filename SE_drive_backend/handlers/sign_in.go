@@ -62,13 +62,12 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 			//# below one is necessary as in signin , the person is never subscribed .
 			global.SignInInit(token, signUpRequestDetails.Email)
 
-			//-______successful reponse .
-			signUpResponseDetails = models.SignUpResponseModel{Message: "SignIn Successful.", TokenId: token, TrialsLeft: global.AddedMediaMap[token].TrialsLeft, IsSubscribed: global.AddedMediaMap[token].IsSubscribed}
+			signUpResponseDetails = models.SignUpResponseModel{Message: "SignIn Successful.", MediaMapModel: *global.MediaMap[token]}
 			json.NewEncoder(w).Encode(signUpResponseDetails)
 
 			//______insert in trials table .
 			insertInTrialsTable := `Insert into trialstable(token,trialsLeft) values(?,?)`
-			_, trialInsertErr := db.Exec(insertInTrialsTable, token, global.AddedMediaMap[token].TrialsLeft)
+			_, trialInsertErr := db.Exec(insertInTrialsTable, token, global.MediaMap[token].TrialsLeft)
 
 			if trialInsertErr != nil {
 				json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error while insertion in trialsTable %s", trialInsertErr)))

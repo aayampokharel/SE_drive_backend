@@ -34,7 +34,7 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 
 	}
-	isSubscribed := global.AddedMediaMap[token].IsSubscribed
+	isSubscribed := global.MediaMap[token].IsSubscribed
 
 	photoRequestModel := models.PhotoRequestModel{Token: token}
 
@@ -89,6 +89,16 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		// 	);
 
 	}
+	if !isSubscribed {
+		if modelError, ok := global.AddNewMedia(token, outputPhotoFileStr, "Photo"); !ok {
+			json.NewEncoder(w).Encode(modelError)
+			return
+		}
+
+	} else {
+		global.AddNewMedia(token, newPhotoFile.Name(), "Photo")
+
+	}
 
 	query := `INSERT INTO PhotoTable(token,originalPhotoFileName,outputPhotoFileName) VALUES(?,?,?)`
 
@@ -97,15 +107,16 @@ func uploadPhoto(w http.ResponseWriter, r *http.Request) {
 		print("error 2")
 		json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadGateway, fmt.Sprintf("Error while executing insertion in db for photo.%s", err)))
 
-		//! i can also throw error by making PHOTOFILENAME UNIQUE AS WHY 2 OF SAME NAME  AND THAT IS NOT POSSIBLE AS WELL . SO TEI HO .FRON FRONTEND TELL AAKASH TO CHECK IF THE FILENAME IS SAME AS OTHER THEN ONLY SEND ELSE ERROR WILL BE THROWN .
+		//! make separate folders for each user and store media there .
+		//! test for issubscribed as well .
 
 		return
 	}
 	if !isSubscribed {
-		global.AddNewMedia(w, token, outputPhotoFileStr, "Photo")
+
 		uploadFromResponse(w, outputPhotoFileStr, "Photo", 1024*250)
 	} else {
-		global.AddNewMedia(w, token, newPhotoFile.Name(), "Photo")
+
 		uploadFromResponse(w, newPhotoFile.Name(), "Photo", 1024*250)
 	}
 

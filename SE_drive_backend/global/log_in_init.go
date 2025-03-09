@@ -2,12 +2,14 @@ package global
 
 import "SE_drive_backend/models"
 
-func LogInInit(tokenKey string, trialsLeft int, isSubscribed bool) {
-	if _, ok := AddedMediaMap[tokenKey]; !ok {
+func LogInInit(tokenKey string, trialsLeft int, email string, isSubscribed bool, modelsMediaMap *models.MediaMap) {
+	if _, ok := MediaMap[tokenKey]; !ok {
 
-		AddedMediaMap[tokenKey] = &models.AddedMediaMap{}
-		AddedMediaMap[tokenKey].IsSubscribed = isSubscribed
-		AddedMediaMap[tokenKey].TrialsLeft = trialsLeft
+		MediaMap[tokenKey] = modelsMediaMap //here the media is initialized .
+		MediaMap[tokenKey].Email = email
+		MediaMap[tokenKey].Token = tokenKey
+		MediaMap[tokenKey].IsSubscribed = isSubscribed
+		MediaMap[tokenKey].TrialsLeft = trialsLeft
 
 	}
 }

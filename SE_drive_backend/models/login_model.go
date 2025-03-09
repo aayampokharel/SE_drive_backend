@@ -8,9 +8,7 @@ type LogInRequestModel struct {
 }
 
 type LogInResponseModel struct {
-	IsSubscribed bool      `json:"is_subscribed"`
-	TrialsLeft   int       `json:"trials_left"`
-	MediaList    *MediaMap `json:"media_list"`
+	MediaList *MediaMap `json:"media_list"`
 }
 
 type LogInDbModel struct {

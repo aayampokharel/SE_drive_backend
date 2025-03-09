@@ -29,26 +29,28 @@ func SignOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, exists := global.AddedMediaMap[signOutRequestModel.Token]
+	data, exists := global.MediaMap[signOutRequestModel.Token]
 	if !exists {
 		json.NewEncoder(w).Encode(errors.SetErrorModel(
 			http.StatusBadRequest,
-			"Token not found in AddedMediaMap."))
+			"Token not found in MediaMap."))
 		return
 	}
 	fmt.Print(data.TrialsLeft)
 	fmt.Print(data.TrialsLeft)
 	fmt.Print(data.TrialsLeft)
 	fmt.Print(data.TrialsLeft)
+
+	// fmt.Print("\n\n\n 💦💦💦", data.Token, "\n", signOutRequestModel.Token, data.TrialsLeft, "\n\n\n")
 	trialsInsert := `insert into trialstable(token,trialsLeft) values(?,?)
 	 ON DUPLICATE KEY UPDATE trialsLeft = VALUES(trialsLeft)`
-	_, insertTrialErr := db.Exec(trialsInsert, global.AddedMediaMap[signOutRequestModel.Token].Token, global.AddedMediaMap[signOutRequestModel.Token].TrialsLeft)
+	_, insertTrialErr := db.Exec(trialsInsert, signOutRequestModel.Token, data.TrialsLeft)
 	if insertTrialErr != nil {
 		json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadRequest, fmt.Sprintf("error while inserting into the trials db , %s", insertTrialErr)))
 		return
 	}
 	delete(global.MediaMap, signOutRequestModel.Token)
-	delete(global.AddedMediaMap, signOutRequestModel.Token)
+	delete(global.MediaMap, signOutRequestModel.Token)
 	json.NewEncoder(w).Encode(errors.SetErrorModel(http.StatusBadRequest, "sign Out successful!"))
 
 }
